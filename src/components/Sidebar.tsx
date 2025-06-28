@@ -34,7 +34,16 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { userRoles } = useAuth();
 
-  const role = userRoles.find((r) =>
+  interface AuthContextType {
+    userRoles: string[];
+  }
+
+  interface LinkItem {
+    href: string;
+    label: string;
+  }
+
+  const role: RoleType | undefined = userRoles.find((r: string) =>
     ['ADMIN', 'CLIENT', 'INSURER', 'BENEFICIARY'].includes(r.toUpperCase())
   )?.toUpperCase() as RoleType | undefined;
 

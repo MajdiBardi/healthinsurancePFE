@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { getContracts, createContract } from '@/services/api';
@@ -9,11 +9,14 @@ export default function Contracts() {
     type: '',
     montant: '',
     dateDebut: '',
-    dateFin: ''
+    dateFin: '',
   });
 
   useEffect(() => {
-    fetchContracts();
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchContracts();
+    }
   }, []);
 
   const fetchContracts = async () => {
