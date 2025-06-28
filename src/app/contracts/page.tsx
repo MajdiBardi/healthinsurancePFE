@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthProvider';
 import { getContracts, createContract, updateContract, deleteContract } from '../../services/api';
 import type { Contract } from '../../types/contracts';
+import axios from 'axios';
 
 export default function ContractsPage() {
   const { keycloak } = useAuth();
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [form, setForm] = useState({
     clientId: '',
     insurerId: '',
@@ -19,6 +21,22 @@ export default function ContractsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+
+  // Récupérer les utilisateurs
+  useEffect(() => {
+    if (keycloak?.token) {
+      axios.get('http://localhost:8087/api/users', {
+        headers: {
+          Authorization: `Bearer ${keycloak.token}`
+        }
+      }).then(res => {
+        setUsers(res.data);
+        console.log("USERS:", res.data); // <-- Ajoute ceci pour voir la structure
+      }).catch(err => {
+        console.error("Erreur lors de la récupération des utilisateurs :", err);
+      });
+    }
+  }, [keycloak?.token]);
 
   const fetchContracts = () => {
     getContracts()
@@ -33,7 +51,7 @@ export default function ContractsPage() {
     }
   }, [keycloak?.token]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -41,7 +59,7 @@ export default function ContractsPage() {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    return date.toISOString().split('T')[0];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,27 +147,51 @@ export default function ContractsPage() {
     <div style={{ padding: '2rem' }}>
       <h2>Liste des contrats</h2>
       <form onSubmit={editId ? handleUpdate : handleSubmit} style={{ marginBottom: '2rem' }}>
-        <input
+        <select
           name="clientId"
-          placeholder="Client ID"
           value={form.clientId}
           onChange={handleChange}
           required
-        />
-        <input
+        >
+          <option value="">Sélectionner un client</option>
+          {users
+            .filter((user) => user.role === 'CLIENT')
+            .map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name || user.email || user.id}
+              </option>
+            ))}
+        </select>
+        <select
           name="insurerId"
-          placeholder="Assureur ID"
           value={form.insurerId}
           onChange={handleChange}
           required
-        />
-        <input
+        >
+          <option value="">Sélectionner un assureur</option>
+          {users
+            .filter((user) => user.role === 'INSURER')
+            .map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name || user.email || user.id}
+              </option>
+            ))}
+        </select>
+        <select
           name="beneficiaryId"
-          placeholder="Bénéficiaire ID"
           value={form.beneficiaryId}
           onChange={handleChange}
           required
-        />
+        >
+          <option value="">Sélectionner un bénéficiaire</option>
+          {users
+            .filter((user) => user.role === 'BENEFICIARY')
+            .map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name || user.email || user.id}
+              </option>
+            ))}
+        </select>
         <input
           name="status"
           placeholder="Statut"
