@@ -10,6 +10,7 @@ import { LocalizationProvider } from '@/components/core/localization-provider';
 import { ThemeProvider } from '@/components/core/theme-provider/theme-provider';
 
 import Sidebar from '@/components/Sidebar'; // ← assure-toi que ce composant existe bien
+import Header from '@/components/Header';
 
 export const viewport = {
   width: 'device-width',
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: LayoutProps) {
           <ThemeProvider>
             <LocalizationProvider>
               <UserProvider>
-                <div style={{ display: 'flex', minHeight: '100vh' }}>
+                {/* Header au-dessus de tout */}
+                <Header />
+                {/* Ajoute le paddingTop ici */}
+                <div style={{ display: 'flex', minHeight: '100vh', paddingTop: 64 }}>
                   <Sidebar />
                   <main style={{ flex: 1, padding: '2rem' }}>
                     {children}

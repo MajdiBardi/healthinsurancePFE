@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthProvider';
 import { getContracts, createContract, updateContract, deleteContract } from '../../services/api';
 import type { Contract } from '../../types/contracts';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import Link from 'next/link';
 
 export default function ContractsPage() {
   const { keycloak } = useAuth();
@@ -21,6 +23,7 @@ export default function ContractsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
   // Récupérer les utilisateurs
   useEffect(() => {
@@ -39,7 +42,13 @@ export default function ContractsPage() {
   }, [keycloak?.token]);
 
   const fetchContracts = () => {
-    getContracts()
+    const url = userRole === 'CLIENT'
+      ? 'http://localhost:8222/api/contracts/my-contracts'
+      : 'http://localhost:8222/api/contracts';
+
+    axios.get(url, {
+      headers: { Authorization: `Bearer ${keycloak.token}` }
+    })
       .then((res) => setContracts(res.data))
       .catch((err) => console.error('Failed to fetch contracts:', err));
   };
@@ -142,112 +151,219 @@ export default function ContractsPage() {
       setLoading(false);
     }
   };
+  const userRole = keycloak?.tokenParsed?.realm_access?.roles?.[0] || '';
+  const userId = keycloak?.tokenParsed?.sub;
+  console.log('userRole:', userRole);
+
+  const handleDownloadPDF = () => {
+    if (!selectedContract) return;
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.setTextColor('#1976d2');
+    doc.text(`Contrat #${selectedContract.id}`, 20, 20);
+
+    doc.setFontSize(12);
+    doc.setTextColor('#222');
+    let y = 35;
+    doc.text(`Status : ${selectedContract.status}`, 20, y);
+    y += 10;
+    doc.text(`Montant : ${selectedContract.montant} DT`, 20, y);
+    y += 10;
+    doc.text(`Client : ${selectedContract.clientId}`, 20, y);
+    y += 10;
+    doc.text(`Assureur : ${selectedContract.insurerId}`, 20, y);
+    y += 10;
+    doc.text(`Bénéficiaire : ${selectedContract.beneficiaryId}`, 20, y);
+    y += 10;
+    doc.text(`Date de début : ${selectedContract.creationDate}`, 20, y);
+    y += 10;
+    doc.text(`Date de fin : ${selectedContract.endDate}`, 20, y);
+
+    doc.save(`contrat_${selectedContract.id}.pdf`);
+  };
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Liste des contrats</h2>
-      <form onSubmit={editId ? handleUpdate : handleSubmit} style={{ marginBottom: '2rem' }}>
-        <select
-          name="clientId"
-          value={form.clientId}
-          onChange={handleChange}
-          required
+    <div
+      style={{
+        margin: '2rem auto',
+        background: '#f4f8fb',
+        borderRadius: 18,
+        boxShadow: '0 4px 24px #1976d210',
+        maxWidth: 950,
+        minHeight: 400,
+        height: 'calc(100vh - 100px)',
+        overflowY: 'auto',
+        padding: '2rem',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2 style={{ color: '#1976d2', letterSpacing: 1 }}>Liste des contrats</h2>
+        <Link
+          href="/contracts/new"
+          style={{
+            padding: '10px 24px',
+            borderRadius: 8,
+            background: '#1976d2',
+            color: '#fff',
+            border: 'none',
+            fontWeight: 600,
+            letterSpacing: 1,
+            boxShadow: '0 2px 8px #1976d220',
+            textDecoration: 'none'
+          }}
         >
-          <option value="">Sélectionner un client</option>
-          {users
-            .filter((user) => user.role === 'CLIENT')
-            .map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name || user.email || user.id}
-              </option>
-            ))}
-        </select>
-        <select
-          name="insurerId"
-          value={form.insurerId}
-          onChange={handleChange}
-          required
-        >
-          <option value="">Sélectionner un assureur</option>
-          {users
-            .filter((user) => user.role === 'INSURER')
-            .map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name || user.email || user.id}
-              </option>
-            ))}
-        </select>
-        <select
-          name="beneficiaryId"
-          value={form.beneficiaryId}
-          onChange={handleChange}
-          required
-        >
-          <option value="">Sélectionner un bénéficiaire</option>
-          {users
-            .filter((user) => user.role === 'BENEFICIARY')
-            .map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name || user.email || user.id}
-              </option>
-            ))}
-        </select>
-        <input
-          name="status"
-          placeholder="Statut"
-          value={form.status}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="creationDate"
-          type="date"
-          value={form.creationDate}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="endDate"
-          type="date"
-          value={form.endDate}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="montant"
-          placeholder="Montant"
-          type="number"
-          step="0.01"
-          value={form.montant}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? (editId ? 'Modification...' : 'Création...') : (editId ? 'Modifier' : 'Créer un contrat')}
-        </button>
-        {editId && (
-          <button type="button" onClick={() => { setEditId(null); setForm({ clientId: '', insurerId: '', beneficiaryId: '', status: '', creationDate: '', endDate: '', montant: '' }); }}>
-            Annuler
-          </button>
-        )}
-      </form>
+          Ajouter un contrat
+        </Link>
+      </div>
 
-      <ul>
-        {contracts.map((c) => (
-          <li key={c.id} style={{ marginBottom: '1rem' }}>
-            <strong>ID : </strong>{c.id}<br />
-            <strong>Status : </strong>{c.status}<br />
-            <strong>Montant : </strong>{c.montant} DT<br />
-            <strong>Client : </strong>{c.clientId}<br />
-            <strong>Assureur : </strong>{c.insurerId}<br />
-            <strong>Bénéficiaire : </strong>{c.beneficiaryId}<br />
-            <strong>Date de début : </strong>{c.creationDate}<br />
-            <strong>Date de fin : </strong>{c.endDate}
-            <button onClick={() => handleEdit(c)}>Modifier</button>
-            <button onClick={() => handleDelete(c.id)}>Supprimer</button>
-          </li>
-        ))}
-      </ul>
+      {/* Contrats en boxs séparées */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
+        {contracts
+          .filter(c => userRole !== 'CLIENT' || c.clientId === userId)
+          .map((c) => (
+            <div
+              key={c.id}
+              onClick={() => setSelectedContract(c)}
+              style={{
+                background: selectedContract?.id === c.id ? '#e3f2fd' : '#fff',
+                borderRadius: 14,
+                boxShadow: selectedContract?.id === c.id
+                  ? '0 4px 24px #1976d230'
+                  : '0 1px 6px rgba(60,60,60,0.08)',
+                padding: '1.5rem',
+                minWidth: 260,
+                flex: '1 1 260px',
+                cursor: 'pointer',
+                border: selectedContract?.id === c.id ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
+                position: 'relative'
+              }}
+            >
+              <div style={{ fontWeight: 700, marginBottom: 8, color: '#1976d2', fontSize: 18 }}>Contrat #{c.id}</div>
+              <div>
+                <strong>Status :</strong>
+                <span style={{
+                  marginLeft: 8,
+                  color: c.status === 'Actif' ? '#388e3c' : '#e65100',
+                  fontWeight: 600
+                }}>{c.status}</span>
+              </div>
+              <div>
+                <strong>Montant :</strong>
+                <span style={{ color: '#bfa100', fontWeight: 700, marginLeft: 8 }}>{c.montant} DT</span>
+              </div>
+              <div><strong>Date de début :</strong> {c.creationDate}</div>
+              <div><strong>Date de fin :</strong> {c.endDate}</div>
+              {userRole !== 'CLIENT' && (
+                <div style={{ marginTop: 12 }}>
+                  <button onClick={e => { e.stopPropagation(); handleEdit(c); }} style={{ marginRight: 8, padding: '7px 18px', borderRadius: 6, border: 'none', background: '#1976d2', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #1976d220' }}>Modifier</button>
+                  <button onClick={e => { e.stopPropagation(); handleDelete(c.id); }} style={{ padding: '7px 18px', borderRadius: 6, border: 'none', background: '#e53935', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #e5393520' }}>Supprimer</button>
+                </div>
+              )}
+              <span style={{
+                position: 'absolute',
+                top: 12,
+                right: 18,
+                background: c.status === 'Actif' ? '#e8f5e9' : '#fff3e0',
+                color: c.status === 'Actif' ? '#388e3c' : '#e65100',
+                borderRadius: 8,
+                padding: '2px 10px',
+                fontSize: 12,
+                fontWeight: 600
+              }}>
+                {c.status}
+              </span>
+            </div>
+          ))}
+      </div>
+
+      {/* Détail du contrat sélectionné en modale */}
+      {selectedContract && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(25, 118, 210, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setSelectedContract(null)}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 20,
+              boxShadow: '0 8px 40px #1976d250',
+              padding: '2.5rem 2.5rem 2rem 2.5rem',
+              maxWidth: 500,
+              width: '90%',
+              position: 'relative',
+              border: '2.5px solid #1976d2',
+              animation: 'popIn 0.25s cubic-bezier(.4,2,.6,1)'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedContract(null)}
+              style={{
+                position: 'absolute',
+                top: 18,
+                right: 18,
+                background: '#f4f8fb',
+                border: 'none',
+                borderRadius: '50%',
+                width: 36,
+                height: 36,
+                fontWeight: 'bold',
+                fontSize: 22,
+                color: '#1976d2',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px #1976d220'
+              }}
+              aria-label="Fermer"
+            >×</button>
+            <h3 style={{ color: '#1976d2', marginBottom: 18, textAlign: 'center', fontSize: 26 }}>Détail du contrat #{selectedContract.id}</h3>
+            <div style={{ marginBottom: 12 }}><strong>Status :</strong> <span style={{ color: selectedContract.status === 'Actif' ? '#388e3c' : '#e65100', fontWeight: 600 }}>{selectedContract.status}</span></div>
+            <div style={{ marginBottom: 12 }}><strong>Montant :</strong> <span style={{ color: '#bfa100', fontWeight: 700 }}>{selectedContract.montant} DT</span></div>
+            <div style={{ marginBottom: 12 }}><strong>Client :</strong> {selectedContract.clientId}</div>
+            <div style={{ marginBottom: 12 }}><strong>Assureur :</strong> {selectedContract.insurerId}</div>
+            <div style={{ marginBottom: 12 }}><strong>Bénéficiaire :</strong> {selectedContract.beneficiaryId}</div>
+            <div style={{ marginBottom: 12 }}><strong>Date de début :</strong> {selectedContract.creationDate}</div>
+            <div style={{ marginBottom: 12 }}><strong>Date de fin :</strong> {selectedContract.endDate}</div>
+            <button
+              onClick={handleDownloadPDF}
+              style={{
+                background: '#1976d2',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '8px 18px',
+                fontWeight: 600,
+                marginBottom: 18,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px #1976d220',
+                display: 'block',
+                marginLeft: 'auto',
+                marginRight: 'auto'
+              }}
+            >
+              Télécharger en PDF
+            </button>
+          </div>
+          {/* Petite animation CSS */}
+          <style>{`
+            @keyframes popIn {
+              0% { transform: scale(0.85); opacity: 0; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
