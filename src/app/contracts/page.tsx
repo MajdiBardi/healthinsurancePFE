@@ -10,6 +10,16 @@ import Link from 'next/link';
 
 export default function ContractsPage() {
   const { keycloak } = useAuth();
+  const roles = keycloak?.tokenParsed?.realm_access?.roles || [];
+  const userRole =
+    roles.includes('ADMIN')
+      ? 'ADMIN'
+      : roles.includes('INSURER')
+      ? 'INSURER'
+      : roles.includes('CLIENT')
+      ? 'CLIENT'
+      : '';
+  const userId = keycloak?.tokenParsed?.sub;
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [form, setForm] = useState({
@@ -25,26 +35,30 @@ export default function ContractsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
-  // Récupérer les utilisateurs
+  // Récupérer les utilisateurs (ADMIN ou INSURER uniquement)
   useEffect(() => {
-    if (keycloak?.token) {
+    if (
+      keycloak?.token &&
+      (userRole === 'ADMIN' || userRole === 'INSURER')
+    ) {
       axios.get('http://localhost:8087/api/users', {
         headers: {
           Authorization: `Bearer ${keycloak.token}`
         }
       }).then(res => {
         setUsers(res.data);
-        console.log("USERS:", res.data); // <-- Ajoute ceci pour voir la structure
+        console.log("USERS:", res.data);
       }).catch(err => {
         console.error("Erreur lors de la récupération des utilisateurs :", err);
       });
     }
-  }, [keycloak?.token]);
+  }, [keycloak?.token, userRole]);
 
   const fetchContracts = () => {
-    const url = userRole === 'CLIENT'
-      ? 'http://localhost:8222/api/contracts/my-contracts'
-      : 'http://localhost:8222/api/contracts';
+    const url =
+      userRole === 'CLIENT'
+        ? 'http://localhost:8222/api/contracts/my-contracts'
+        : 'http://localhost:8222/api/contracts';
 
     axios.get(url, {
       headers: { Authorization: `Bearer ${keycloak.token}` }
@@ -151,9 +165,8 @@ export default function ContractsPage() {
       setLoading(false);
     }
   };
-  const userRole = keycloak?.tokenParsed?.realm_access?.roles?.[0] || '';
-  const userId = keycloak?.tokenParsed?.sub;
   console.log('userRole:', userRole);
+  console.log('tokenParsed:', keycloak?.tokenParsed);
 
   const handleDownloadPDF = () => {
     if (!selectedContract) return;
