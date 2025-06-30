@@ -10,7 +10,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:8080/api/notifications', {
+    axios.get('http://localhost:8222/api/notifications', {
       headers: { Authorization: `Bearer ${keycloak.token}` }
     }).then(res => setNotifications(res.data));
   }, [keycloak.token]);

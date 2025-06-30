@@ -7,9 +7,11 @@ import type { Contract } from '../../types/contracts';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function ContractsPage() {
   const { keycloak } = useAuth();
+  const router = useRouter();
   const roles = keycloak?.tokenParsed?.realm_access?.roles || [];
   const userRole =
     roles.includes('ADMIN')
@@ -285,7 +287,24 @@ export default function ContractsPage() {
               <div><strong>Statut :</strong> <span>{getStatus(c.endDate)}</span></div>
               {userRole !== 'CLIENT' && (
                 <div style={{ marginTop: 12 }}>
-                  <button onClick={e => { e.stopPropagation(); handleEdit(c); }} style={{ marginRight: 8, padding: '7px 18px', borderRadius: 6, border: 'none', background: '#1976d2', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #1976d220' }}>Modifier</button>
+                  <button
+  onClick={e => {
+    e.stopPropagation();
+    router.push(`/contracts/new?id=${c.id}`);
+  }}
+  style={{
+    marginRight: 8,
+    padding: '7px 18px',
+    borderRadius: 6,
+    border: 'none',
+    background: '#1976d2',
+    color: '#fff',
+    fontWeight: 600,
+    boxShadow: '0 2px 8px #1976d220'
+  }}
+>
+  Modifier
+</button>
                   <button onClick={e => { e.stopPropagation(); handleDelete(c.id); }} style={{ padding: '7px 18px', borderRadius: 6, border: 'none', background: '#e53935', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #e5393520' }}>Supprimer</button>
                 </div>
               )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 // Update the import path below if your AuthProvider is located elsewhere
 import { useAuth } from '../../../contexts/AuthProvider';
 import axios from 'axios';
@@ -9,6 +9,8 @@ import axios from 'axios';
 export default function NewContractPage() {
   const { keycloak } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const contractId = searchParams.get('id');
   const [users, setUsers] = useState<any[]>([]);
   const [form, setForm] = useState({
     clientId: '',
@@ -42,6 +44,25 @@ export default function NewContractPage() {
     }
   }, [form.duration]);
 
+  useEffect(() => {
+    if (contractId && keycloak?.token) {
+      // Charger les infos du contrat à modifier
+      axios.get(`http://localhost:8222/api/contracts/${contractId}`, {
+        headers: { Authorization: `Bearer ${keycloak.token}` }
+      }).then(res => {
+        const contract = res.data;
+        setForm({
+          clientId: contract.clientId,
+          insurerId: contract.insurerId,
+          beneficiaryId: contract.beneficiaryId,
+          duration: '', // à calculer si tu stockes la durée, sinon laisse vide
+          montant: contract.montant?.toString() || '',
+        });
+        setEndDate(contract.endDate);
+      });
+    }
+  }, [contractId, keycloak?.token]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -60,16 +81,24 @@ export default function NewContractPage() {
       const today = new Date();
       const payload = {
         ...form,
-        creationDate: today.toISOString().split('T')[0], // Date du jour
-        endDate: endDate, // Date de fin calculée
+        creationDate: today.toISOString().split('T')[0],
+        endDate: endDate,
         montant: parseFloat(form.montant),
       };
-      await axios.post('http://localhost:8222/api/contracts', payload, {
-        headers: { Authorization: `Bearer ${keycloak.token}` }
-      });
+      if (contractId) {
+        // Update
+        await axios.put(`http://localhost:8222/api/contracts/${contractId}`, payload, {
+          headers: { Authorization: `Bearer ${keycloak.token}` }
+        });
+      } else {
+        // Create
+        await axios.post('http://localhost:8222/api/contracts', payload, {
+          headers: { Authorization: `Bearer ${keycloak.token}` }
+        });
+      }
       router.push('/contracts');
     } catch (err) {
-      alert('Erreur lors de la création du contrat');
+      alert('Erreur lors de la création/modification du contrat');
     } finally {
       setLoading(false);
     }
