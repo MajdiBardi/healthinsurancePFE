@@ -12,6 +12,7 @@ export default function UsersPage() {
   // 🔹 Étape 1 : Créer automatiquement l'utilisateur à partir du token Keycloak
   useEffect(() => {
     if (keycloak?.token) {
+      console.log("➡️ Appel à /api/users/me avec token :", keycloak.token);
       axios.get('http://localhost:8087/api/users/me', {
         headers: {
           Authorization: `Bearer ${keycloak.token}`
