@@ -26,9 +26,7 @@ export default function ContractsPage() {
     clientId: '',
     insurerId: '',
     beneficiaryId: '',
-    status: '',
-    creationDate: '',
-    endDate: '',
+    duration: '',
     montant: '',
   });
   const [loading, setLoading] = useState(false);
@@ -89,11 +87,16 @@ export default function ContractsPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setFullYear(today.getFullYear() + 1); // Par exemple, ajouter 1 an à la date d'aujourd'hui
+
       const payload = {
         ...form,
-        creationDate: formatDate(form.creationDate),
-        endDate: formatDate(form.endDate),
+        creationDate: today.toISOString().split('T')[0],
+        endDate: endDate,
         montant: parseFloat(form.montant),
+        // PAS de status ici !
       };
 
       await createContract(payload);
@@ -129,7 +132,7 @@ export default function ContractsPage() {
       clientId: contract.clientId,
       insurerId: contract.insurerId,
       beneficiaryId: contract.beneficiaryId,
-      status: contract.status,
+      // status: contract.status, // SUPPRIMER cette ligne
       creationDate: contract.creationDate,
       endDate: contract.endDate,
       montant: contract.montant?.toString() || '',
@@ -196,6 +199,13 @@ export default function ContractsPage() {
     doc.save(`contrat_${selectedContract.id}.pdf`);
   };
 
+  const getStatus = (endDate: string) => {
+    if (!endDate) return 'Active';
+    const today = new Date();
+    const end = new Date(endDate);
+    return today <= end ? 'Active' : 'Inactive';
+  };
+
   return (
     <div
       style={{
@@ -214,22 +224,24 @@ export default function ContractsPage() {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2 style={{ color: '#1976d2', letterSpacing: 1 }}>Liste des contrats</h2>
-        <Link
-          href="/contracts/new"
-          style={{
-            padding: '10px 24px',
-            borderRadius: 8,
-            background: '#1976d2',
-            color: '#fff',
-            border: 'none',
-            fontWeight: 600,
-            letterSpacing: 1,
-            boxShadow: '0 2px 8px #1976d220',
-            textDecoration: 'none'
-          }}
-        >
-          Ajouter un contrat
-        </Link>
+        {userRole !== 'CLIENT' && (
+          <Link
+            href="/contracts/new"
+            style={{
+              padding: '10px 24px',
+              borderRadius: 8,
+              background: '#1976d2',
+              color: '#fff',
+              border: 'none',
+              fontWeight: 600,
+              letterSpacing: 1,
+              boxShadow: '0 2px 8px #1976d220',
+              textDecoration: 'none'
+            }}
+          >
+            Ajouter un contrat
+          </Link>
+        )}
       </div>
 
       {/* Contrats en boxs séparées */}
@@ -260,9 +272,9 @@ export default function ContractsPage() {
                 <strong>Status :</strong>
                 <span style={{
                   marginLeft: 8,
-                  color: c.status === 'Actif' ? '#388e3c' : '#e65100',
+                  color: getStatus(c.endDate) === 'Active' ? '#388e3c' : '#e65100',
                   fontWeight: 600
-                }}>{c.status}</span>
+                }}>{getStatus(c.endDate)}</span>
               </div>
               <div>
                 <strong>Montant :</strong>
@@ -270,6 +282,7 @@ export default function ContractsPage() {
               </div>
               <div><strong>Date de début :</strong> {c.creationDate}</div>
               <div><strong>Date de fin :</strong> {c.endDate}</div>
+              <div><strong>Statut :</strong> <span>{getStatus(c.endDate)}</span></div>
               {userRole !== 'CLIENT' && (
                 <div style={{ marginTop: 12 }}>
                   <button onClick={e => { e.stopPropagation(); handleEdit(c); }} style={{ marginRight: 8, padding: '7px 18px', borderRadius: 6, border: 'none', background: '#1976d2', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px #1976d220' }}>Modifier</button>

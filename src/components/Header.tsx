@@ -33,7 +33,7 @@ export default function Header() {
           fontFamily: 'Segoe UI, Arial, sans-serif',
           textShadow: '0 2px 8px #1976d250'
         }}>
-          Vermeg Health Insurance
+          Vermeg Life Insurance
         </span>
       </div>
     </header>

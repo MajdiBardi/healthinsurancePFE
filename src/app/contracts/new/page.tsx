@@ -14,11 +14,10 @@ export default function NewContractPage() {
     clientId: '',
     insurerId: '',
     beneficiaryId: '',
-    status: '',
-    creationDate: '',
-    endDate: '',
+    duration: '', // Ajouté
     montant: '',
   });
+  const [endDate, setEndDate] = useState(''); // Ajouté
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -28,6 +27,20 @@ export default function NewContractPage() {
       }).then(res => setUsers(res.data));
     }
   }, [keycloak?.token]);
+
+  // Calcule la date de fin dès que la durée change
+  useEffect(() => {
+    if (form.duration) {
+      const today = new Date();
+      let end = new Date(today);
+      if (form.duration === '6 mois') end.setMonth(end.getMonth() + 6);
+      else if (form.duration.endsWith('an')) end.setFullYear(end.getFullYear() + parseInt(form.duration));
+      else if (form.duration.endsWith('ans')) end.setFullYear(end.getFullYear() + parseInt(form.duration));
+      setEndDate(end.toISOString().split('T')[0]);
+    } else {
+      setEndDate('');
+    }
+  }, [form.duration]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -44,10 +57,11 @@ export default function NewContractPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const today = new Date();
       const payload = {
         ...form,
-        creationDate: formatDate(form.creationDate),
-        endDate: formatDate(form.endDate),
+        creationDate: today.toISOString().split('T')[0], // Date du jour
+        endDate: endDate, // Date de fin calculée
         montant: parseFloat(form.montant),
       };
       await axios.post('http://localhost:8222/api/contracts', payload, {
@@ -108,9 +122,28 @@ export default function NewContractPage() {
             <option key={user.id} value={user.id}>{user.name || user.email || user.id}</option>
           ))}
         </select>
-        <input name="status" placeholder="Statut" value={form.status} onChange={handleChange} required style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }} />
-        <input name="creationDate" type="date" value={form.creationDate} onChange={handleChange} required style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }} />
-        <input name="endDate" type="date" value={form.endDate} onChange={handleChange} required style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }} />
+        <select
+          name="duration"
+          value={form.duration}
+          onChange={handleChange}
+          required
+          style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }}
+        >
+          <option value="">Sélectionner une durée</option>
+          <option value="6 mois">6 mois</option>
+          <option value="1 an">1 an</option>
+          <option value="2 ans">2 ans</option>
+          <option value="3 ans">3 ans</option>
+          <option value="4 ans">4 ans</option>
+          <option value="5 ans">5 ans</option>
+        </select>
+        <input
+          type="text"
+          value={endDate ? `Fin : ${endDate}` : ''}
+          readOnly
+          style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#eee' }}
+          placeholder="Date de fin automatique"
+        />
         <input name="montant" placeholder="Montant" type="number" step="0.01" value={form.montant} onChange={handleChange} required style={{ flex: 1, minWidth: 100, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#fffbe7', color: '#bfa100', fontWeight: 600 }} />
         <button type="submit" disabled={loading} style={{ padding: '10px 24px', borderRadius: 8, background: '#1976d2', color: '#fff', border: 'none', fontWeight: 600, letterSpacing: 1, boxShadow: '0 2px 8px #1976d220' }}>
           {loading ? 'Création...' : 'Créer le contrat'}

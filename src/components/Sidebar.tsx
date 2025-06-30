@@ -19,6 +19,7 @@ const roleLinks: Record<RoleType, { href: string; label: string }[]> = {
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/contracts', label: 'Mes Contrats' },
     { href: '/payments', label: 'Paiements' },
+    { href: '/notifications', label: 'Notifications' },
   ],
   INSURER: [
     { href: '/dashboard', label: 'Dashboard' },
