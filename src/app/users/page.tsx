@@ -9,122 +9,121 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
-  // 🔹 Étape 1 : Créer automatiquement l'utilisateur à partir du token Keycloak
+  // Création automatique utilisateur Keycloak
   useEffect(() => {
     if (keycloak?.token) {
-      console.log("➡️ Appel à /api/users/me avec token :", keycloak.token);
       axios.get('http://localhost:8087/api/users/me', {
-        headers: {
-          Authorization: `Bearer ${keycloak.token}`
-        }
-      }).then(res => {
-        console.log("👤 Utilisateur Keycloak créé ou existant :", res.data);
-      }).catch(err => {
-        console.error("❌ Erreur lors de la création de l'utilisateur :", err);
+        headers: { Authorization: `Bearer ${keycloak.token}` }
       });
     }
   }, [keycloak?.token]);
 
-  // 🔹 Étape 2 : Récupérer la liste des utilisateurs
+  // Récupérer la liste des utilisateurs
   useEffect(() => {
-    console.log("🧪 TOKEN:", keycloak?.token);
-
-    if (!keycloak?.token) {
-      console.warn("No token available");
-      return;
-    }
-
+    if (!keycloak?.token) return;
     axios.get('http://localhost:8087/api/users', {
-      headers: {
-        Authorization: `Bearer ${keycloak.token}`
-      }
-    }).then(res => {
-      console.log("✅ API users response:", res.data);
-      setUsers(res.data);
-    }).catch(err => {
-      console.error("❌ API error:", err);
-    });
+      headers: { Authorization: `Bearer ${keycloak.token}` }
+    }).then(res => setUsers(res.data));
   }, [keycloak?.token]);
 
   return (
     <div
       style={{
         margin: '2rem auto',
-        background: '#f4f8fb',
-        borderRadius: 18,
-        boxShadow: '0 4px 24px #1976d210',
-        maxWidth: 950,
+        maxWidth: 1100,
         minHeight: 400,
-        height: 'calc(100vh - 100px)', // 64px header + 2rem margin
-        overflowY: 'auto',
-        padding: '2rem',
-        display: 'flex',
-        flexDirection: 'column',
       }}
     >
-      <h2 style={{ color: '#1976d2', marginBottom: '2rem', letterSpacing: 1 }}>Liste des utilisateurs</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
-        {users.map((user: any) => (
-          <div
-            key={user.id}
-            onClick={() => setSelectedUser(user)}
-            style={{
-              background: '#fff',
-              borderRadius: 14,
-              boxShadow: '0 2px 12px #1976d220',
-              padding: '1.5rem',
-              minWidth: 240,
-              flex: '1 1 240px',
-              border: '1.5px solid #e3eafc',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              position: 'relative',
-              cursor: 'pointer',
-              transition: 'box-shadow 0.2s, border 0.2s',
-              ...(selectedUser?.id === user.id && {
-                border: '2px solid #1976d2',
-                boxShadow: '0 4px 24px #1976d230',
-                background: '#e3f2fd'
-              })
-            }}
-          >
-            <div style={{ fontWeight: 700, color: '#1976d2', fontSize: 18, marginBottom: 6 }}>
-              {user.name || user.email || user.id}
-            </div>
-            <div style={{ color: '#555', fontSize: 15, marginBottom: 2 }}>
-              <strong>Email :</strong> {user.email}
-            </div>
-            <div>
-              <span
-                style={{
-                  background: user.role === 'ADMIN'
-                    ? '#e3f2fd'
-                    : user.role === 'CLIENT'
-                    ? '#e8f5e9'
-                    : user.role === 'INSURER'
-                    ? '#fffde7'
-                    : '#f3e5f5',
-                  color: user.role === 'ADMIN'
-                    ? '#1976d2'
-                    : user.role === 'CLIENT'
-                    ? '#388e3c'
-                    : user.role === 'INSURER'
-                    ? '#bfa100'
-                    : '#8e24aa',
-                  borderRadius: 8,
-                  padding: '2px 12px',
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
-              >
-                {user.role}
-              </span>
-            </div>
-          </div>
-        ))}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 32
+      }}>
+        <h2 style={{ color: '#1976d2', fontWeight: 700, letterSpacing: 1 }}>
+          Liste des utilisateurs
+        </h2>
       </div>
 
+      {/* Conteneur scrollable et élégant */}
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: 16,
+          boxShadow: '0 2px 16px rgba(60,72,100,0.08)',
+          padding: 24,
+          maxHeight: 500,
+          overflowY: 'auto',
+          marginBottom: 32,
+        }}
+      >
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1.5rem',
+        }}>
+          {users.map((user: any) => (
+            <div
+              key={user.id}
+              onClick={() => setSelectedUser(user)}
+              style={{
+                background: selectedUser?.id === user.id ? '#e3f2fd' : '#fff',
+                borderRadius: 14,
+                boxShadow: selectedUser?.id === user.id
+                  ? '0 4px 24px #1976d230'
+                  : '0 2px 12px #1976d220',
+                padding: '1.5rem',
+                minWidth: 240,
+                flex: '1 1 240px',
+                border: selectedUser?.id === user.id
+                  ? '2px solid #1976d2'
+                  : '1.5px solid #e3eafc',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.2s, border 0.2s, background 0.2s'
+              }}
+            >
+              <div style={{ fontWeight: 700, color: '#1976d2', fontSize: 18, marginBottom: 6 }}>
+                {user.name || user.email || user.id}
+              </div>
+              <div style={{ color: '#555', fontSize: 15, marginBottom: 2 }}>
+                <strong>Email :</strong> {user.email}
+              </div>
+              <div>
+                <span
+                  style={{
+                    background: user.role === 'ADMIN'
+                      ? '#e3f2fd'
+                      : user.role === 'CLIENT'
+                      ? '#e8f5e9'
+                      : user.role === 'INSURER'
+                      ? '#fffde7'
+                      : '#f3e5f5',
+                    color: user.role === 'ADMIN'
+                      ? '#1976d2'
+                      : user.role === 'CLIENT'
+                      ? '#388e3c'
+                      : user.role === 'INSURER'
+                      ? '#bfa100'
+                      : '#8e24aa',
+                    borderRadius: 8,
+                    padding: '2px 12px',
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}
+                >
+                  {user.role}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Modale détail utilisateur */}
       {selectedUser && (
         <div
           style={{

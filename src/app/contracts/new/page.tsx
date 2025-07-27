@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-// Update the import path below if your AuthProvider is located elsewhere
 import { useAuth } from '../../../contexts/AuthProvider';
 import axios from 'axios';
 
@@ -16,10 +15,10 @@ export default function NewContractPage() {
     clientId: '',
     insurerId: '',
     beneficiaryId: '',
-    duration: '', // Ajouté
+    duration: '',
     montant: '',
   });
-  const [endDate, setEndDate] = useState(''); // Ajouté
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,7 +29,6 @@ export default function NewContractPage() {
     }
   }, [keycloak?.token]);
 
-  // Calcule la date de fin dès que la durée change
   useEffect(() => {
     if (form.duration) {
       const today = new Date();
@@ -46,7 +44,6 @@ export default function NewContractPage() {
 
   useEffect(() => {
     if (contractId && keycloak?.token) {
-      // Charger les infos du contrat à modifier
       axios.get(`http://localhost:8222/api/contracts/${contractId}`, {
         headers: { Authorization: `Bearer ${keycloak.token}` }
       }).then(res => {
@@ -55,7 +52,7 @@ export default function NewContractPage() {
           clientId: contract.clientId,
           insurerId: contract.insurerId,
           beneficiaryId: contract.beneficiaryId,
-          duration: '', // à calculer si tu stockes la durée, sinon laisse vide
+          duration: '',
           montant: contract.montant?.toString() || '',
         });
         setEndDate(contract.endDate);
@@ -65,13 +62,6 @@ export default function NewContractPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '';
-    return date.toISOString().split('T')[0];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,12 +76,10 @@ export default function NewContractPage() {
         montant: parseFloat(form.montant),
       };
       if (contractId) {
-        // Update
         await axios.put(`http://localhost:8222/api/contracts/${contractId}`, payload, {
           headers: { Authorization: `Bearer ${keycloak.token}` }
         });
       } else {
-        // Create
         await axios.post('http://localhost:8222/api/contracts', payload, {
           headers: { Authorization: `Bearer ${keycloak.token}` }
         });
@@ -107,81 +95,145 @@ export default function NewContractPage() {
   return (
     <div
       style={{
-        margin: '2rem auto',
-        background: '#f4f8fb',
-        borderRadius: 18,
-        boxShadow: '0 4px 24px #1976d210',
-        maxWidth: 600,
-        minHeight: 400,
-        padding: '2rem',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f4f8fb 60%, #e3eafc 100%)',
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem 0'
       }}
     >
-      <h2 style={{ color: '#1976d2', marginBottom: '2rem', letterSpacing: 1 }}>Créer un contrat</h2>
-      <form
-        onSubmit={handleSubmit}
+      <div
         style={{
           background: '#fff',
-          borderRadius: 16,
-          boxShadow: '0 4px 24px rgba(25, 118, 210, 0.08)',
-          padding: '2rem',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '1.2rem',
-          alignItems: 'center',
-          border: '1.5px solid #e3eafc'
+          borderRadius: 20,
+          boxShadow: '0 4px 32px #1976d220',
+          maxWidth: 520,
+          width: '100%',
+          padding: '2.5rem 2rem',
+          margin: 'auto'
         }}
       >
-        <select name="clientId" value={form.clientId} onChange={handleChange} required style={{ flex: 1, minWidth: 180, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }}>
-          <option value="">Sélectionner un client</option>
-          {users.filter((user) => user.role === 'CLIENT').map((user) => (
-            <option key={user.id} value={user.id}>{user.name || user.email || user.id}</option>
-          ))}
-        </select>
-        <select name="insurerId" value={form.insurerId} onChange={handleChange} required style={{ flex: 1, minWidth: 180, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }}>
-          <option value="">Sélectionner un assureur</option>
-          {users.filter((user) => user.role === 'INSURER').map((user) => (
-            <option key={user.id} value={user.id}>{user.name || user.email || user.id}</option>
-          ))}
-        </select>
-        <select name="beneficiaryId" value={form.beneficiaryId} onChange={handleChange} required style={{ flex: 1, minWidth: 180, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }}>
-          <option value="">Sélectionner un bénéficiaire</option>
-          {users.filter((user) => user.role === 'BENEFICIARY').map((user) => (
-            <option key={user.id} value={user.id}>{user.name || user.email || user.id}</option>
-          ))}
-        </select>
-        <select
-          name="duration"
-          value={form.duration}
-          onChange={handleChange}
-          required
-          style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#f7fbff' }}
+        <h2 style={{ color: '#1976d2', marginBottom: '2rem', letterSpacing: 1, textAlign: 'center', fontWeight: 700 }}>
+          {contractId ? 'Modifier le contrat' : 'Créer un contrat'}
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.2rem'
+          }}
         >
-          <option value="">Sélectionner une durée</option>
-          <option value="6 mois">6 mois</option>
-          <option value="1 an">1 an</option>
-          <option value="2 ans">2 ans</option>
-          <option value="3 ans">3 ans</option>
-          <option value="4 ans">4 ans</option>
-          <option value="5 ans">5 ans</option>
-        </select>
-        <input
-          type="text"
-          value={endDate ? `Fin : ${endDate}` : ''}
-          readOnly
-          style={{ flex: 1, minWidth: 120, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#eee' }}
-          placeholder="Date de fin automatique"
-        />
-        <input name="montant" placeholder="Montant" type="number" step="0.01" value={form.montant} onChange={handleChange} required style={{ flex: 1, minWidth: 100, padding: 10, borderRadius: 8, border: '1px solid #b6c6e3', background: '#fffbe7', color: '#bfa100', fontWeight: 600 }} />
-        <button type="submit" disabled={loading} style={{ padding: '10px 24px', borderRadius: 8, background: '#1976d2', color: '#fff', border: 'none', fontWeight: 600, letterSpacing: 1, boxShadow: '0 2px 8px #1976d220' }}>
-          {loading ? 'Création...' : 'Créer le contrat'}
-        </button>
-        <button type="button" onClick={() => router.push('/contracts')}
-          style={{ padding: '10px 24px', borderRadius: 8, background: '#eee', border: 'none', marginLeft: 8, fontWeight: 600 }}>
-          Annuler
-        </button>
-      </form>
+          <select name="clientId" value={form.clientId} onChange={handleChange} required
+            style={{ padding: 12, borderRadius: 10, border: '1.5px solid #e3eafc', background: '#f7fbff', fontSize: 16 }}>
+            <option value="">Sélectionner un client</option>
+            {users.filter((user) => user.role === 'CLIENT').map((user) => (
+              <option key={user.id} value={user.id}>{user.name || user.email || user.id}</option>
+            ))}
+          </select>
+          <select name="insurerId" value={form.insurerId} onChange={handleChange} required
+            style={{ padding: 12, borderRadius: 10, border: '1.5px solid #e3eafc', background: '#f7fbff', fontSize: 16 }}>
+            <option value="">Sélectionner un assureur</option>
+            {users.filter((user) => user.role === 'INSURER').map((user) => (
+              <option key={user.id} value={user.id}>{user.name || user.email || user.id}</option>
+            ))}
+          </select>
+          <select name="beneficiaryId" value={form.beneficiaryId} onChange={handleChange} required
+            style={{ padding: 12, borderRadius: 10, border: '1.5px solid #e3eafc', background: '#f7fbff', fontSize: 16 }}>
+            <option value="">Sélectionner un bénéficiaire</option>
+            {users.filter((user) => user.role === 'BENEFICIARY').map((user) => (
+              <option key={user.id} value={user.id}>{user.name || user.email || user.id}</option>
+            ))}
+          </select>
+          <select
+            name="duration"
+            value={form.duration}
+            onChange={handleChange}
+            required
+            style={{ padding: 12, borderRadius: 10, border: '1.5px solid #e3eafc', background: '#f7fbff', fontSize: 16 }}>
+            <option value="">Sélectionner une durée</option>
+            <option value="6 mois">6 mois</option>
+            <option value="1 an">1 an</option>
+            <option value="2 ans">2 ans</option>
+            <option value="3 ans">3 ans</option>
+            <option value="4 ans">4 ans</option>
+            <option value="5 ans">5 ans</option>
+          </select>
+          <input
+            type="text"
+            value={endDate ? `Fin : ${endDate}` : ''}
+            readOnly
+            style={{
+              padding: 12,
+              borderRadius: 10,
+              border: '1.5px solid #e3eafc',
+              background: '#f4f8fb',
+              fontSize: 16,
+              color: '#1976d2',
+              fontWeight: 600
+            }}
+            placeholder="Date de fin automatique"
+          />
+          <input
+            name="montant"
+            placeholder="Montant"
+            type="number"
+            step="0.01"
+            value={form.montant}
+            onChange={handleChange}
+            required
+            style={{
+              padding: 12,
+              borderRadius: 10,
+              border: '1.5px solid #e3eafc',
+              background: '#fffbe7',
+              color: '#bfa100',
+              fontWeight: 700,
+              fontSize: 16
+            }}
+          />
+          <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                borderRadius: 10,
+                background: '#1976d2',
+                color: '#fff',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: 16,
+                letterSpacing: 1,
+                boxShadow: '0 2px 8px #1976d220',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'background 0.2s'
+              }}
+            >
+              {loading ? 'Création...' : contractId ? 'Enregistrer' : 'Créer le contrat'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/contracts')}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                borderRadius: 10,
+                background: '#eee',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: 16,
+                color: '#1976d2',
+                cursor: 'pointer'
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
