@@ -26,6 +26,7 @@ export default function ContractsPage() {
   const userId = keycloak?.tokenParsed?.sub
   const [contracts, setContracts] = useState<Contract[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
   const [form, setForm] = useState({
     clientId: "",
     insurerId: "",
@@ -273,7 +274,30 @@ export default function ContractsPage() {
       .slice(0, 2)
   }
 
-  const filteredContracts = contracts.filter((c) => userRole !== "CLIENT" || c.clientId === userId)
+  const filteredContracts = contracts
+    .filter((c) => userRole !== "CLIENT" || c.clientId === userId)
+    .filter((contract) => {
+      if (!searchTerm) return true
+
+      const searchLower = searchTerm.toLowerCase()
+      const clientName = getUserDisplay(contract.clientId).toLowerCase()
+      const insurerName = getUserDisplay(contract.insurerId).toLowerCase()
+      const beneficiaryName = getUserDisplay(contract.beneficiaryId).toLowerCase()
+      const status = getStatus(contract.endDate).toLowerCase()
+      const amount = contract.montant?.toString() || ""
+      const contractId = contract.id.toString().toLowerCase() // Updated line
+
+      return (
+        clientName.includes(searchLower) ||
+        insurerName.includes(searchLower) ||
+        beneficiaryName.includes(searchLower) ||
+        status.includes(searchLower) ||
+        amount.includes(searchLower) ||
+        contractId.includes(searchLower) ||
+        contract.creationDate.includes(searchLower) ||
+        contract.endDate.includes(searchLower)
+      )
+    })
 
   return (
     <div className="contracts-container">
@@ -286,6 +310,46 @@ export default function ContractsPage() {
         )}
       </div>
 
+      <div className="search-section">
+        <div className="search-container">
+          <div className="search-input-wrapper">
+            <svg
+              className="search-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Rechercher par client, statut, montant, ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm("")} className="clear-search-btn" title="Effacer la recherche">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {searchTerm && (
+            <div className="search-results-info">
+              {filteredContracts.length} contrat{filteredContracts.length !== 1 ? "s" : ""} trouvé
+              {filteredContracts.length !== 1 ? "s" : ""}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="table-container">
         {loading ? (
           <div className="loading-state">
@@ -293,8 +357,8 @@ export default function ContractsPage() {
           </div>
         ) : filteredContracts.length === 0 ? (
           <div className="empty-state">
-            <h3>Aucun contrat trouvé</h3>
-            <p>Il n'y a pas encore de contrats à afficher.</p>
+            <h3>{searchTerm ? "Aucun contrat trouvé" : "Aucun contrat trouvé"}</h3>
+            <p>{searchTerm ? "Essayez de modifier votre recherche." : "Il n'y a pas encore de contrats à afficher."}</p>
           </div>
         ) : (
           <table className="contracts-table">

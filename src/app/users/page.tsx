@@ -10,6 +10,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
 
   // Création automatique utilisateur Keycloak
   useEffect(() => {
@@ -44,6 +45,23 @@ export default function UsersPage() {
     }
   }
 
+  const filteredUsers = users.filter((user: any) => {
+    if (!searchTerm) return true
+
+    const searchLower = searchTerm.toLowerCase()
+    const userName = (user.name || "").toLowerCase()
+    const userEmail = (user.email || "").toLowerCase()
+    const userRole = (user.role || "").toLowerCase()
+    const userId = (user.id || "").toString().toLowerCase()
+
+    return (
+      userName.includes(searchLower) ||
+      userEmail.includes(searchLower) ||
+      userRole.includes(searchLower) ||
+      userId.includes(searchLower)
+    )
+  })
+
   if (loading) {
     return (
       <div className="users-container">
@@ -60,7 +78,42 @@ export default function UsersPage() {
       <div className="users-header">
         <h2 className="users-title">Liste des utilisateurs</h2>
         <div className="users-count">
-          {users.length} utilisateur{users.length > 1 ? "s" : ""} trouvé{users.length > 1 ? "s" : ""}
+          {searchTerm ? `${filteredUsers.length} sur ${users.length}` : users.length} utilisateur
+          {(searchTerm ? filteredUsers.length : users.length) > 1 ? "s" : ""} trouvé
+          {(searchTerm ? filteredUsers.length : users.length) > 1 ? "s" : ""}
+        </div>
+      </div>
+
+      <div className="search-section">
+        <div className="search-container">
+          <div className="search-input-wrapper">
+            <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Rechercher par nom, email, rôle ou ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="clear-search-button"
+                aria-label="Effacer la recherche"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -77,7 +130,7 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody className="table-body">
-              {users.map((user: any, index) => (
+              {filteredUsers.map((user: any, index) => (
                 <tr key={user.id} className={`table-row ${selectedUser?.id === user.id ? "selected" : ""}`}>
                   <td className="table-cell">
                     <div className="user-info">
@@ -110,9 +163,11 @@ export default function UsersPage() {
             </tbody>
           </table>
 
-          {users.length === 0 && (
+          {filteredUsers.length === 0 && (
             <div className="empty-state">
-              <div className="empty-text">Aucun utilisateur trouvé</div>
+              <div className="empty-text">
+                {searchTerm ? "Aucun utilisateur trouvé pour cette recherche" : "Aucun utilisateur trouvé"}
+              </div>
             </div>
           )}
         </div>
