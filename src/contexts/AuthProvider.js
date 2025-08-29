@@ -8,6 +8,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [userRoles, setUserRoles] = useState([]);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     keycloak
@@ -17,6 +18,16 @@ export const AuthProvider = ({ children }) => {
         if (authenticated) {
           const roles = keycloak.tokenParsed?.realm_access?.roles || [];
           setUserRoles(roles);
+
+          // Extract useful user fields
+          const parsed = keycloak.tokenParsed || {};
+          setUser({
+            username: parsed.preferred_username,
+            email: parsed.email,
+            firstName: parsed.given_name,
+            lastName: parsed.family_name,
+            name: parsed.name,
+          });
         }
       })
       .catch(err => {
@@ -30,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ authenticated, keycloak, logout, userRoles }}>
+    <AuthContext.Provider value={{ authenticated, keycloak, logout, userRoles, user }}>
       {authenticated ? children : <div>Authentification en cours...</div>}
     </AuthContext.Provider>
   );

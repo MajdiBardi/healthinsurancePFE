@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthProvider';
 import axios from 'axios';
+import './users.css';
 
 export default function UsersPage() {
   const { keycloak } = useAuth();
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true)
 
   // Création automatique utilisateur Keycloak
   useEffect(() => {
@@ -23,200 +25,139 @@ export default function UsersPage() {
     if (!keycloak?.token) return;
     axios.get('http://localhost:8087/api/users', {
       headers: { Authorization: `Bearer ${keycloak.token}` }
-    }).then(res => setUsers(res.data));
+    }).then((res: any) => {
+        setUsers(res.data)
+        setLoading(false)
+      });
   }, [keycloak?.token]);
 
-  return (
-    <div
-      style={{
-        margin: '2rem auto',
-        maxWidth: 1100,
-        minHeight: 400,
-      }}
-    >
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 32
-      }}>
-        <h2 style={{ color: '#1976d2', fontWeight: 700, letterSpacing: 1 }}>
-          Liste des utilisateurs
-        </h2>
-      </div>
+  const getRoleBadgeClass = (role: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "role-badge role-admin"
+      case "CLIENT":
+        return "role-badge role-client"
+      case "INSURER":
+        return "role-badge role-insurer"
+      default:
+        return "role-badge role-default"
+    }
+  }
 
-      {/* Conteneur scrollable et élégant */}
-      <div
-        style={{
-          background: '#fff',
-          borderRadius: 16,
-          boxShadow: '0 2px 16px rgba(60,72,100,0.08)',
-          padding: 24,
-          maxHeight: 500,
-          overflowY: 'auto',
-          marginBottom: 32,
-        }}
-      >
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '1.5rem',
-        }}>
-          {users.map((user: any) => (
-            <div
-              key={user.id}
-              onClick={() => setSelectedUser(user)}
-              style={{
-                background: selectedUser?.id === user.id ? '#e3f2fd' : '#fff',
-                borderRadius: 14,
-                boxShadow: selectedUser?.id === user.id
-                  ? '0 4px 24px #1976d230'
-                  : '0 2px 12px #1976d220',
-                padding: '1.5rem',
-                minWidth: 240,
-                flex: '1 1 240px',
-                border: selectedUser?.id === user.id
-                  ? '2px solid #1976d2'
-                  : '1.5px solid #e3eafc',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'box-shadow 0.2s, border 0.2s, background 0.2s'
-              }}
-            >
-              <div style={{ fontWeight: 700, color: '#1976d2', fontSize: 18, marginBottom: 6 }}>
-                {user.name || user.email || user.id}
-              </div>
-              <div style={{ color: '#555', fontSize: 15, marginBottom: 2 }}>
-                <strong>Email :</strong> {user.email}
-              </div>
-              <div>
-                <span
-                  style={{
-                    background: user.role === 'ADMIN'
-                      ? '#e3f2fd'
-                      : user.role === 'CLIENT'
-                      ? '#e8f5e9'
-                      : user.role === 'INSURER'
-                      ? '#fffde7'
-                      : '#f3e5f5',
-                    color: user.role === 'ADMIN'
-                      ? '#1976d2'
-                      : user.role === 'CLIENT'
-                      ? '#388e3c'
-                      : user.role === 'INSURER'
-                      ? '#bfa100'
-                      : '#8e24aa',
-                    borderRadius: 8,
-                    padding: '2px 12px',
-                    fontWeight: 600,
-                    fontSize: 13,
-                  }}
-                >
-                  {user.role}
-                </span>
-              </div>
-            </div>
-          ))}
+  if (loading) {
+    return (
+      <div className="users-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <span className="loading-text">Chargement des utilisateurs...</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="users-container">
+      <div className="users-header">
+        <h2 className="users-title">Liste des utilisateurs</h2>
+        <div className="users-count">
+          {users.length} utilisateur{users.length > 1 ? "s" : ""} trouvé{users.length > 1 ? "s" : ""}
         </div>
       </div>
 
-      {/* Modale détail utilisateur */}
+      <div className="table-container">
+        <div className="table-wrapper">
+          <table className="users-table">
+            <thead className="table-header">
+              <tr>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>ID</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody className="table-body">
+              {users.map((user: any, index) => (
+                <tr key={user.id} className={`table-row ${selectedUser?.id === user.id ? "selected" : ""}`}>
+                  <td className="table-cell">
+                    <div className="user-info">
+                      <div className="user-avatar">
+                        <span className="user-avatar-text">
+                          {(user.name || user.email || user.id).charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="user-details">
+                        <div className="user-name">{user.name || "Nom non défini"}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="table-cell">
+                    <div className="user-email">{user.email}</div>
+                  </td>
+                  <td className="table-cell">
+                    <span className={getRoleBadgeClass(user.role)}>{user.role}</span>
+                  </td>
+                  <td className="table-cell">
+                    <div className="user-id">{user.id}</div>
+                  </td>
+                  <td className="table-cell">
+                    <button onClick={() => setSelectedUser(user)} className="details-button">
+                      Voir détails
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {users.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-text">Aucun utilisateur trouvé</div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {selectedUser && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(25, 118, 210, 0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setSelectedUser(null)}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: 20,
-              boxShadow: '0 8px 40px #1976d250',
-              padding: '2.5rem 2.5rem 2rem 2.5rem',
-              maxWidth: 400,
-              width: '90%',
-              position: 'relative',
-              border: '2.5px solid #1976d2',
-              animation: 'popIn 0.25s cubic-bezier(.4,2,.6,1)'
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setSelectedUser(null)}
-              style={{
-                position: 'absolute',
-                top: 18,
-                right: 18,
-                background: '#f4f8fb',
-                border: 'none',
-                borderRadius: '50%',
-                width: 36,
-                height: 36,
-                fontWeight: 'bold',
-                fontSize: 22,
-                color: '#1976d2',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px #1976d220'
-              }}
-              aria-label="Fermer"
-            >×</button>
-            <h3 style={{ color: '#1976d2', marginBottom: 18, textAlign: 'center', fontSize: 24 }}>
-              Détail utilisateur
-            </h3>
-            <div style={{ fontWeight: 700, color: '#1976d2', fontSize: 18, marginBottom: 12 }}>
-              {selectedUser.name || selectedUser.email || selectedUser.id}
+        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setSelectedUser(null)} className="modal-close" aria-label="Fermer">
+              ×
+            </button>
+
+            <div className="modal-header">
+              <div className="modal-avatar">
+                <span className="modal-avatar-text">
+                  {(selectedUser.name || selectedUser.email || selectedUser.id).charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <h3 className="modal-title">Détail utilisateur</h3>
             </div>
-            <div style={{ marginBottom: 10 }}>
-              <strong>Email :</strong> {selectedUser.email}
-            </div>
-            <div style={{ marginBottom: 10 }}>
-              <strong>ID :</strong> {selectedUser.id}
-            </div>
-            <div>
-              <span
-                style={{
-                  background: selectedUser.role === 'ADMIN'
-                    ? '#e3f2fd'
-                    : selectedUser.role === 'CLIENT'
-                    ? '#e8f5e9'
-                    : selectedUser.role === 'INSURER'
-                    ? '#fffde7'
-                    : '#f3e5f5',
-                  color: selectedUser.role === 'ADMIN'
-                    ? '#1976d2'
-                    : selectedUser.role === 'CLIENT'
-                    ? '#388e3c'
-                    : selectedUser.role === 'INSURER'
-                    ? '#bfa100'
-                    : '#8e24aa',
-                  borderRadius: 8,
-                  padding: '2px 12px',
-                  fontWeight: 600,
-                  fontSize: 15,
-                }}
-              >
-                {selectedUser.role}
-              </span>
+
+            <div className="modal-fields">
+              <div className="modal-field">
+                <label className="modal-label">Nom</label>
+                <div className="modal-value">{selectedUser.name || selectedUser.email || selectedUser.id}</div>
+              </div>
+
+              <div className="modal-field">
+                <label className="modal-label">Email</label>
+                <div className="modal-value email">{selectedUser.email}</div>
+              </div>
+
+              <div className="modal-field">
+                <label className="modal-label">ID</label>
+                <div className="modal-value id">{selectedUser.id}</div>
+              </div>
+
+              <div className="modal-field">
+                <label className="modal-label">Rôle</label>
+                <span className={getRoleBadgeClass(selectedUser.role)}>{selectedUser.role}</span>
+              </div>
             </div>
           </div>
-          <style>{`
-            @keyframes popIn {
-              0% { transform: scale(0.85); opacity: 0; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-          `}</style>
         </div>
       )}
     </div>
-  );
+  )
 }
