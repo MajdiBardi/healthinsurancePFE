@@ -17,19 +17,19 @@ const roleLinks: Record<RoleType, { href: string; label: string; icon: string }[
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ],
   CLIENT: [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
+    //{ href: "/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/contracts", label: "Mes Contrats", icon: "📋" },
     { href: "/payments", label: "Mon Portfolio", icon: "💼" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ],
   INSURER: [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
+    //{ href: "/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/users", label: "Utilisateurs", icon: "👥" },
     { href: "/contracts", label: "Contrats", icon: "📋" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ],
   BENEFICIARY: [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
+    //{ href: "/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/contracts", label: "Contrats", icon: "📋" },
   ],
 }
