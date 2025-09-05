@@ -14,6 +14,7 @@ const roleLinks: Record<RoleType, { href: string; label: string; icon: string }[
     { href: "/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/users", label: "Utilisateurs", icon: "👥" },
     { href: "/contracts", label: "Contrats", icon: "📋" },
+    { href: "/contracts/change-requests", label: "Demandes de modification", icon: "🔁" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ],
   CLIENT: [

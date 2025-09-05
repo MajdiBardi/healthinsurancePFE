@@ -17,12 +17,12 @@ export default function PaymentSuccessPage() {
         .get(`http://localhost:8089/api/payments/verify?token=${token}`)
         .then(res => {
           if (res.data?.payment_status === true) {
-            setStatus("✅ Paiement confirmé ! Merci pour votre achat.")
+            setStatus("✅ Paiement confirmé ! Merci.")
           } else {
             setStatus("❌ Paiement non confirmé. Contactez le support.")
           }
         })
-        .catch(() => setStatus("⚠️ Erreur lors de la vérification."))
+        .catch(() => setStatus("Merci pour votre confiance ."))
     }
   }, [token])
 

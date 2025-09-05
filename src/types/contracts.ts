@@ -25,3 +25,18 @@ export interface ContractWithInsurer extends Contract {
     email?: string;
   };
 }   
+
+export interface ContractChangeRequest {
+  id: string;
+  contractId: string;
+  requesterId: string;
+  field: string; // e.g., 'beneficiaryId' | 'insurerId' | 'montant' | 'endDate'
+  currentValue: string;
+  requestedValue: string;
+  reason?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewerId?: string;
+  reviewerNote?: string;
+  createdAt: string;
+  updatedAt?: string;
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import axios from "axios"
 import { useAuth } from "../../contexts/AuthProvider"
 import "./payment.css"
@@ -11,6 +11,16 @@ export default function PaymentsPage() {
   const [method, setMethod] = useState("manual")
   const [contractId, setContractId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [contracts, setContracts] = useState<any[]>([])
+
+  // Récupérer les contrats de l'utilisateur
+  useEffect(() => {
+    if (keycloak?.token) {
+      axios.get("http://localhost:8222/api/contracts/my-contracts", {
+        headers: { Authorization: `Bearer ${keycloak.token}` }
+      }).then(res => setContracts(res.data))
+    }
+  }, [keycloak?.token])
 
   // Paymee-specific states
   const [firstName, setFirstName] = useState("")
@@ -42,42 +52,41 @@ export default function PaymentsPage() {
         setContractId("")
         setMethod("manual")
       } else if (method === "online") {
-  try {
-    const res = await axios.post(
-      "https://sandbox.paymee.tn/api/v2/payments/create",
-      {
-        amount: parseFloat(amount),
-        note: `Paiement contrat ${contractId}`,
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        phone,
-        return_url: "https://localhost:3000/payment/success",
-        cancel_url: "https://localhost:3000/payment/cancel",
-        webhook_url: "https://localhost:8089/api/payments/webhook",
-        order_id: contractId,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Token 88dad2f8a7db654d6326a0814ad090b3e30cad0a",
-        },
+        try {
+          const res = await axios.post(
+            "https://sandbox.paymee.tn/api/v2/payments/create",
+            {
+              amount: parseFloat(amount),
+              note: `Paiement contrat ${contractId}`,
+              first_name: firstName,
+              last_name: lastName,
+              email,
+              phone,
+              return_url: "https://localhost:3000/payment/success",
+              cancel_url: "https://localhost:3000/payment/cancel",
+              webhook_url: "https://localhost:8089/api/payments/webhook",
+              order_id: contractId,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Token 88dad2f8a7db654d6326a0814ad090b3e30cad0a",
+              },
+            }
+          )
+
+          console.log("Paymee response:", res.data) // 👀 log everything
+
+          if (res.data?.data?.payment_url) {
+            window.location.href = res.data.data.payment_url
+          } else {
+            alert(`Erreur Paymee: ${res.data.message}\n${JSON.stringify(res.data.errors)}`)
+          }
+        } catch (err: any) {
+          console.error(err)
+          alert("Erreur lors de la requête Paymee.")
+        }
       }
-    )
-
-    console.log("Paymee response:", res.data) // 👀 log everything
-
-    if (res.data?.data?.payment_url) {
-      window.location.href = res.data.data.payment_url
-    } else {
-      alert(`Erreur Paymee: ${res.data.message}\n${JSON.stringify(res.data.errors)}`)
-    }
-  } catch (err: any) {
-    console.error(err)
-    alert("Erreur lors de la requête Paymee.")
-  }
-}
-
     } catch (error) {
       console.error(error)
       alert("Erreur lors du paiement. Veuillez réessayer.")
@@ -91,6 +100,33 @@ export default function PaymentsPage() {
       <div className="payments-header">
         <h2 className="payments-title">Effectuer un paiement</h2>
         <p className="payments-subtitle">Saisissez les informations de paiement ci-dessous</p>
+      </div>
+
+      {/* Liste des contrats */}
+      <div className="payments-card" style={{ marginBottom: 32 }}>
+        <h3 style={{ marginBottom: 16 }}>Mes contrats</h3>
+        {contracts.length === 0 ? (
+          <div>Aucun contrat trouvé.</div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th>ID Contrat</th>
+                <th>Montant</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.id}</td>
+                  <td>{c.montant} DT</td>
+                  <td style={{ color: "#22c55e", fontWeight: 600 }}>Payé</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="payments-card">

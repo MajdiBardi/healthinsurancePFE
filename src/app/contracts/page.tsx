@@ -3,7 +3,7 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useAuth } from "../../contexts/AuthProvider"
-import { createContract, updateContract, deleteContract } from "../../services/api"
+import { createContract, updateContract, deleteContract, createContractChangeRequest } from "../../services/api"
 import type { Contract } from "../../types/contracts"
 import axios from "axios"
 import jsPDF from "jspdf"
@@ -54,6 +54,9 @@ export default function ContractsPage() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [isPaying, setIsPaying] = useState(false)
+  const [showChangeDialog, setShowChangeDialog] = useState(false)
+  const [changeType, setChangeType] = useState("AMOUNT_UPDATE")
+  const [changeDescription, setChangeDescription] = useState("")
 
   useEffect(() => {
     if (keycloak?.token && (userRole === "ADMIN" || userRole === "INSURER")) {
@@ -464,7 +467,10 @@ export default function ContractsPage() {
             <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 18 }}>
               <button className="action-btn" onClick={handleDownloadPDF}>PDF</button>
               {userRole === "CLIENT" && (
-                <button className="action-btn" onClick={() => setShowPaymentDialog(true)}>💳 Payer</button>
+                <>
+                  <button className="action-btn" onClick={() => setShowPaymentDialog(true)}>💳 Payer</button>
+                  <button className="action-btn" onClick={() => setShowChangeDialog(true)}>🔁 Demander une modification</button>
+                </>
               )}
               {userRole === "ADMIN" && (
                 <>
@@ -506,6 +512,50 @@ export default function ContractsPage() {
             <button onClick={handlePayment} disabled={isPaying}>
               {isPaying ? "Traitement..." : "Valider le paiement"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {showChangeDialog && selectedContract && (
+        <div className="modal-overlay" onClick={() => setShowChangeDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Demande de modification du contrat #{selectedContract.id}</h2>
+            <p>Choisissez le type de modification et décrivez votre demande.</p>
+            <select value={changeType} onChange={(e) => setChangeType(e.target.value)}>
+              <option value="AMOUNT_UPDATE">Montant</option>
+              <option value="BENEFICIARY_UPDATE">Bénéficiaire</option>
+              <option value="INSURER_UPDATE">Assureur</option>
+              <option value="END_DATE_UPDATE">Date de fin</option>
+              <option value="OTHER">Autre</option>
+            </select>
+            <textarea
+              placeholder="Décrivez la modification souhaitée"
+              value={changeDescription}
+              onChange={(e) => setChangeDescription(e.target.value)}
+              rows={4}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowChangeDialog(false)}>Annuler</button>
+              <button
+                onClick={async () => {
+                  try {
+                    await createContractChangeRequest({
+                      contractId: Number(selectedContract.id),
+                      changeType,
+                      description: changeDescription,
+                    })
+                    alert('Demande envoyée avec succès.')
+                    setShowChangeDialog(false)
+                    setChangeDescription('')
+                  } catch (e) {
+                    alert('Erreur lors de l\'envoi de la demande')
+                  }
+                }}
+                disabled={!changeDescription}
+              >
+                Envoyer la demande
+              </button>
+            </div>
           </div>
         </div>
       )}
