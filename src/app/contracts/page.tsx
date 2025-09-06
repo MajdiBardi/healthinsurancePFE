@@ -3,13 +3,14 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useAuth } from "../../contexts/AuthProvider"
-import { createContract, updateContract, deleteContract, createContractChangeRequest } from "../../services/api"
+import { createContract, updateContract, deleteContract, createContractChangeRequest, signContract, getContractSignatureStatus, downloadContractPDF } from "../../services/api"
 import type { Contract } from "../../types/contracts"
 import axios from "axios"
 import jsPDF from "jspdf"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import "./contract.css"
+import ElectronicSignature from "../../components/ElectronicSignature"
 
 // Define the form type
 interface ContractForm {
@@ -57,6 +58,8 @@ export default function ContractsPage() {
   const [showChangeDialog, setShowChangeDialog] = useState(false)
   const [changeType, setChangeType] = useState("AMOUNT_UPDATE")
   const [changeDescription, setChangeDescription] = useState("")
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false)
+  const [signatureStatus, setSignatureStatus] = useState(null)
 
   useEffect(() => {
     if (keycloak?.token && (userRole === "ADMIN" || userRole === "INSURER")) {
@@ -87,6 +90,12 @@ export default function ContractsPage() {
       fetchContracts()
     }
   }, [keycloak?.token])
+
+  useEffect(() => {
+    if (selectedContract) {
+      loadSignatureStatus(selectedContract.id);
+    }
+  }, [selectedContract])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -175,8 +184,29 @@ export default function ContractsPage() {
     }
   }
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!selectedContract) return;
+    
+    try {
+      // Utiliser le nouveau endpoint backend pour PDF avec signatures
+      const response = await downloadContractPDF(selectedContract.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `contrat_${selectedContract.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement PDF:', error);
+      // Fallback vers l'ancienne méthode
+      generateFallbackPDF();
+    }
+  };
+
+  const generateFallbackPDF = () => {
     const doc = new jsPDF();
 
     // En-tête
@@ -245,7 +275,30 @@ export default function ContractsPage() {
     doc.text("Document généré automatiquement par Vermeg Life Insurance", 105, 285, { align: "center" });
 
     doc.save(`contrat_${selectedContract.id}.pdf`);
-  }
+  };
+
+  const handleSignatureComplete = async () => {
+    setShowSignatureDialog(false);
+    // Rafraîchir le statut de signature
+    if (selectedContract) {
+      try {
+        const response = await getContractSignatureStatus(selectedContract.id);
+        setSignatureStatus(response.data);
+        fetchContracts(); // Rafraîchir la liste des contrats
+      } catch (error) {
+        console.error('Erreur lors de la récupération du statut de signature:', error);
+      }
+    }
+  };
+
+  const loadSignatureStatus = async (contractId) => {
+    try {
+      const response = await getContractSignatureStatus(contractId);
+      setSignatureStatus(response.data);
+    } catch (error) {
+      console.error('Erreur lors du chargement du statut de signature:', error);
+    }
+  };
 
   const getStatus = (endDate?: string) => {
     if (!endDate) return "Active"
@@ -461,6 +514,16 @@ export default function ContractsPage() {
               <div><b>Bénéficiaire :</b> {getUserDisplay(selectedContract.beneficiaryId)}</div>
               <div><b>Date de début :</b> {selectedContract.creationDate}</div>
               <div><b>Date de fin :</b> {selectedContract.endDate}</div>
+              
+              {/* Statut des signatures */}
+              {signatureStatus && (
+                <div style={{ marginTop: 15, padding: 10, backgroundColor: '#f5f5f5', borderRadius: 5 }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: 8, color: '#1976d2' }}>Statut des signatures :</div>
+                  <div><b>Client :</b> {signatureStatus.clientSignature ? '✓ Signé' : '✗ Non signé'}</div>
+                  <div><b>Assureur :</b> {signatureStatus.insurerSignature ? '✓ Signé' : '✗ Non signé'}</div>
+                  <div><b>Contrat complet :</b> {signatureStatus.isFullySigned ? '✓ Entièrement signé' : '✗ En attente'}</div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -470,6 +533,28 @@ export default function ContractsPage() {
                 <>
                   <button className="action-btn" onClick={() => setShowPaymentDialog(true)}>💳 Payer</button>
                   <button className="action-btn" onClick={() => setShowChangeDialog(true)}>🔁 Demander une modification</button>
+                  {(!signatureStatus?.clientSignature) && (
+                    <button 
+                      className="action-btn" 
+                      onClick={() => setShowSignatureDialog(true)}
+                      style={{ backgroundColor: '#4caf50', color: 'white' }}
+                    >
+                      ✍️ Signer
+                    </button>
+                  )}
+                </>
+              )}
+              {userRole === "INSURER" && (
+                <>
+                  {(!signatureStatus?.insurerSignature) && (
+                    <button 
+                      className="action-btn" 
+                      onClick={() => setShowSignatureDialog(true)}
+                      style={{ backgroundColor: '#4caf50', color: 'white' }}
+                    >
+                      ✍️ Signer
+                    </button>
+                  )}
                 </>
               )}
               {userRole === "ADMIN" && (
@@ -555,6 +640,25 @@ export default function ContractsPage() {
               >
                 Envoyer la demande
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSignatureDialog && selectedContract && (
+        <div className="modal-overlay" onClick={() => setShowSignatureDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ minWidth: 500, maxWidth: 600 }}>
+            <h2>Signature électronique - Contrat #{selectedContract.id}</h2>
+            <p>Signez électroniquement ce contrat en dessinant votre signature ci-dessous.</p>
+            
+            <ElectronicSignature
+              contractId={selectedContract.id}
+              onSignatureComplete={handleSignatureComplete}
+              userRole={userRole}
+            />
+            
+            <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+              <button onClick={() => setShowSignatureDialog(false)}>Annuler</button>
             </div>
           </div>
         </div>

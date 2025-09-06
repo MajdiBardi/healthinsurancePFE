@@ -6,6 +6,13 @@ export interface Contract {
   clientId: string;
   insurerId: string;
   beneficiaryId: string;
+  montant?: number;
+  // Champs pour signature électronique
+  clientSignature?: string;
+  insurerSignature?: string;
+  clientSignedAt?: string;
+  insurerSignedAt?: string;
+  isFullySigned?: boolean;
   [key: string]: unknown;
 }
 

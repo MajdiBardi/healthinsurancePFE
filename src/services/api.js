@@ -142,3 +142,27 @@ export const deleteNotification = (userId, notificationId) =>
     localStorage.setItem('clientNotifications', JSON.stringify(updated));
     return Promise.resolve({ data: { success: true } });
   });
+
+// Signature électronique API
+export const signContract = (contractId, signature, userRole) => {
+  console.log('API signContract appelée avec:', { contractId, signatureLength: signature.length, userRole });
+  
+  return API.post(`/contracts/${contractId}/sign`, {
+    signature: signature,
+    userRole: userRole // Envoyer le rôle au backend
+  });
+};
+
+export const getContractSignatureStatus = (contractId) => {
+  return API.get(`/contracts/${contractId}/signature-status`);
+};
+
+export const verifyContractSignature = (contractId, signerRole) => {
+  return API.get(`/signatures/contract/${contractId}/verify?signerRole=${signerRole}`);
+};
+
+export const downloadContractPDF = (contractId) => {
+  return API.get(`/contracts/${contractId}/pdf`, {
+    responseType: 'blob'
+  });
+};
