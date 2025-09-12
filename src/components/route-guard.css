@@ -1,0 +1,250 @@
+.route-guard-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 2rem;
+}
+
+.route-guard-card {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  animation: slideInUp 0.6s ease-out;
+}
+
+.route-guard-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.route-guard-card.unauthorized::before {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.route-guard-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  animation: bounceIn 1s ease-out 0.3s both;
+}
+
+.route-guard-icon.unauthorized {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.route-guard-icon svg {
+  width: 40px;
+  height: 40px;
+  stroke-width: 2;
+}
+
+.route-guard-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.route-guard-message {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+  animation: fadeInUp 1s ease-out;
+}
+
+.route-guard-details {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: left;
+  animation: fadeInUp 1.2s ease-out;
+}
+
+.permission-info,
+.user-info {
+  margin-bottom: 1rem;
+}
+
+.permission-info:last-child,
+.user-info:last-child {
+  margin-bottom: 0;
+}
+
+.permission-info h3,
+.user-info h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.role-badges,
+.current-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.current-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.route-guard-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+  animation: fadeInUp 1.4s ease-out;
+}
+
+.route-guard-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+}
+
+.route-guard-button:active {
+  transform: translateY(0);
+}
+
+.route-guard-button svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.route-guard-spinner {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .route-guard-container {
+    padding: 1rem;
+  }
+
+  .route-guard-card {
+    padding: 2rem;
+  }
+
+  .route-guard-title {
+    font-size: 1.5rem;
+  }
+
+  .role-badges,
+  .current-roles {
+    justify-content: center;
+  }
+}

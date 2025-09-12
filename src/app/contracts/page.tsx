@@ -55,11 +55,104 @@ export default function ContractsPage() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [isPaying, setIsPaying] = useState(false)
+  
+  // validation states
+  const [validationErrors, setValidationErrors] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: ""
+  })
   const [showChangeDialog, setShowChangeDialog] = useState(false)
   const [changeType, setChangeType] = useState("AMOUNT_UPDATE")
   const [changeDescription, setChangeDescription] = useState("")
   const [showSignatureDialog, setShowSignatureDialog] = useState(false)
   const [signatureStatus, setSignatureStatus] = useState(null)
+
+  // Validation functions
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case 'firstName':
+        if (!value.trim()) return 'Le prénom est requis'
+        if (value.trim().length < 2) return 'Le prénom doit contenir au moins 2 caractères'
+        if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(value.trim())) return 'Le prénom ne peut contenir que des lettres'
+        return ''
+      
+      case 'lastName':
+        if (!value.trim()) return 'Le nom est requis'
+        if (value.trim().length < 2) return 'Le nom doit contenir au moins 2 caractères'
+        if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(value.trim())) return 'Le nom ne peut contenir que des lettres'
+        return ''
+      
+      case 'email':
+        if (!value.trim()) return 'L\'email est requis'
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(value.trim())) return 'Format d\'email invalide'
+        return ''
+      
+      case 'phone':
+        if (!value.trim()) return 'Le téléphone est requis'
+        const phoneRegex = /^(\+216|216)?[0-9]{8}$/
+        const cleanPhone = value.replace(/\s/g, '')
+        if (!phoneRegex.test(cleanPhone)) return 'Format de téléphone invalide (ex: +21612345678)'
+        return ''
+      
+      default:
+        return ''
+    }
+  }
+
+  const validateAllFields = (): boolean => {
+    const errors = {
+      firstName: validateField('firstName', firstName),
+      lastName: validateField('lastName', lastName),
+      email: validateField('email', email),
+      phone: validateField('phone', phone)
+    }
+    
+    setValidationErrors(errors)
+    
+    return !Object.values(errors).some(error => error !== '')
+  }
+
+  const handleFieldChange = (field: string, value: string) => {
+    // Update the field value
+    switch (field) {
+      case 'firstName':
+        setFirstName(value)
+        break
+      case 'lastName':
+        setLastName(value)
+        break
+      case 'email':
+        setEmail(value)
+        break
+      case 'phone':
+        setPhone(value)
+        break
+    }
+    
+    // Clear error when user starts typing
+    if (validationErrors[field as keyof typeof validationErrors]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }))
+    }
+  }
+
+  const resetPaymentForm = () => {
+    setFirstName("")
+    setLastName("")
+    setEmail("")
+    setPhone("")
+    setValidationErrors({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: ""
+    })
+  }
 
   useEffect(() => {
     if (keycloak?.token && (userRole === "ADMIN" || userRole === "INSURER")) {
@@ -325,6 +418,12 @@ export default function ContractsPage() {
 
   const handlePayment = async () => {
     if (!selectedContract) return
+    
+    // Validate all fields before proceeding
+    if (!validateAllFields()) {
+      return // Stop if validation fails
+    }
+    
     setIsPaying(true)
     try {
       const res = await axios.post(
@@ -332,10 +431,10 @@ export default function ContractsPage() {
         {
           amount: Number.parseFloat(selectedContract.montant.toString()),
           note: `Paiement contrat ${selectedContract.id}`,
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          phone,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          email: email.trim(),
+          phone: phone.replace(/\s/g, ''),
           return_url: "https://localhost:3000/payment/success",
           cancel_url: "https://localhost:3000/payment/cancel",
           webhook_url: "https://localhost:8089/api/payments/webhook",
@@ -386,14 +485,6 @@ export default function ContractsPage() {
     <div className="contracts-container">
       <div className="contracts-header">
         <h1 className="contracts-title">Liste des contrats</h1>
-        <div className="header-right">
-          <span className="contracts-count">{filteredContracts.length} contrats trouvés</span>
-          {userRole !== "CLIENT" && (
-            <Link href="/contracts/new" className="add-contract-btn">
-              Ajouter un contrat
-            </Link>
-          )}
-        </div>
       </div>
 
       <div className="search-section">
@@ -417,6 +508,15 @@ export default function ContractsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
+        </div>
+        
+        <div className="search-actions">
+          <span className="contracts-count">{filteredContracts.length} contrats trouvés</span>
+          {userRole !== "CLIENT" && (
+            <Link href="/contracts/new" className="add-contract-btn">
+              Ajouter un contrat
+            </Link>
+          )}
         </div>
       </div>
 
@@ -557,7 +657,7 @@ export default function ContractsPage() {
                   )}
                 </>
               )}
-              {userRole === "ADMIN" && (
+              {(userRole === "ADMIN" || userRole === "INSURER") && (
                 <>
                   <button
                     className="action-btn"
@@ -581,22 +681,107 @@ export default function ContractsPage() {
       )}
 
       {showPaymentDialog && selectedContract && (
-        <div className="modal-overlay" onClick={() => setShowPaymentDialog(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Paiement contrat #{selectedContract.id}</h2>
-            <p>
-              <strong>Montant:</strong> {selectedContract.montant} DT
-            </p>
-            <p>
-              <strong>ID Contrat:</strong> {selectedContract.id}
-            </p>
-            <input placeholder="Prénom" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            <input placeholder="Nom" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            <input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input placeholder="Téléphone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <button onClick={handlePayment} disabled={isPaying}>
-              {isPaying ? "Traitement..." : "Valider le paiement"}
-            </button>
+        <div className="modal-overlay" onClick={() => {
+          setShowPaymentDialog(false)
+          resetPaymentForm()
+        }}>
+          <div className="modal-content payment-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Paiement contrat #{selectedContract.id}</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => {
+                  setShowPaymentDialog(false)
+                  resetPaymentForm()
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="payment-info">
+              <div className="info-item">
+                <strong>Montant:</strong> {selectedContract.montant} DT
+              </div>
+              <div className="info-item">
+                <strong>ID Contrat:</strong> {selectedContract.id}
+              </div>
+            </div>
+
+            <div className="payment-form">
+              <div className="form-group">
+                <label className="form-label">Prénom *</label>
+                <input 
+                  className={`form-input ${validationErrors.firstName ? 'error' : ''}`}
+                  placeholder="Entrez votre prénom" 
+                  value={firstName} 
+                  onChange={(e) => handleFieldChange('firstName', e.target.value)}
+                />
+                {validationErrors.firstName && (
+                  <span className="error-message">{validationErrors.firstName}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Nom *</label>
+                <input 
+                  className={`form-input ${validationErrors.lastName ? 'error' : ''}`}
+                  placeholder="Entrez votre nom" 
+                  value={lastName} 
+                  onChange={(e) => handleFieldChange('lastName', e.target.value)}
+                />
+                {validationErrors.lastName && (
+                  <span className="error-message">{validationErrors.lastName}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Email *</label>
+                <input 
+                  className={`form-input ${validationErrors.email ? 'error' : ''}`}
+                  placeholder="exemple@email.com" 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => handleFieldChange('email', e.target.value)}
+                />
+                {validationErrors.email && (
+                  <span className="error-message">{validationErrors.email}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Téléphone *</label>
+                <input 
+                  className={`form-input ${validationErrors.phone ? 'error' : ''}`}
+                  placeholder="+21612345678" 
+                  value={phone} 
+                  onChange={(e) => handleFieldChange('phone', e.target.value)}
+                />
+                {validationErrors.phone && (
+                  <span className="error-message">{validationErrors.phone}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                className="btn-secondary" 
+                onClick={() => {
+                  setShowPaymentDialog(false)
+                  resetPaymentForm()
+                }}
+                disabled={isPaying}
+              >
+                Annuler
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={handlePayment} 
+                disabled={isPaying}
+              >
+                {isPaying ? "Traitement..." : "Valider le paiement"}
+              </button>
+            </div>
           </div>
         </div>
       )}

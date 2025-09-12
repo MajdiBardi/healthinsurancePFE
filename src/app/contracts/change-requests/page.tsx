@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthProvider"
 import { getPendingContractChangeRequests, approveContractChangeRequest, rejectContractChangeRequest } from "@/services/api"
 import { notificationManager } from "../../../utils/notificationManager"
+import RouteGuard from "@/components/RouteGuard"
+import axios from "axios"
 import "./change-requests.css"
 
 export default function ContractChangeRequestsPage() {
@@ -49,19 +51,37 @@ export default function ContractChangeRequestsPage() {
     const request = requests.find(r => r.id == requestId)
     
     if (request) {
-      const notification = {
-        type: 'CHANGE_REQUEST_UPDATE',
-        title: status === 'APPROVED' ? 'Demande approuvée' : 'Demande rejetée',
-        message: `Votre demande de modification pour le contrat #${request.contractId} a été ${status === 'APPROVED' ? 'approuvée' : 'rejetée'}.`,
-        contractId: request.contractId,
-        requestId: requestId,
-        status: status
-      }
-      
-      // Utiliser le gestionnaire de notifications offline
-      notificationManager.addNotification(notification)
-      
-      console.log(`Notification ${status} ajoutée pour le contrat #${request.contractId}`)
+      // Récupérer l'ID du client depuis le contrat
+      const getClientIdFromContract = async (contractId: string) => {
+        try {
+          const response = await axios.get(`http://localhost:8222/api/contracts/${contractId}`, {
+            headers: { Authorization: `Bearer ${keycloak.token}` }
+          });
+          return response.data.clientId;
+        } catch (error) {
+          console.error('Error fetching contract details:', error);
+          return null;
+        }
+      };
+
+      // Ajouter la notification avec l'ID du client
+      getClientIdFromContract(request.contractId).then(clientId => {
+        if (clientId) {
+          const notification = {
+            type: 'CHANGE_REQUEST_UPDATE',
+            title: status === 'APPROVED' ? 'Demande approuvée' : 'Demande rejetée',
+            message: `Votre demande de modification pour le contrat #${request.contractId} a été ${status === 'APPROVED' ? 'approuvée' : 'rejetée'}.`,
+            contractId: request.contractId,
+            requestId: requestId,
+            status: status
+          }
+          
+          // Utiliser le gestionnaire de notifications offline avec l'ID du client
+          notificationManager.addNotification(notification, clientId)
+          
+          console.log(`Notification ${status} ajoutée pour le client ${clientId}, contrat #${request.contractId}`)
+        }
+      });
     }
   }
 
@@ -86,24 +106,25 @@ export default function ContractChangeRequestsPage() {
   }
 
   return (
-    <div className="change-requests-container">
-      <div className="change-requests-header">
-        <h1 className="change-requests-title">Demandes de modification</h1>
-        <div className="requests-stats">
-          <div className="stat-card stat-pending">
-            <div className="stat-number">{stats.pending}</div>
-            <div className="stat-label">En attente</div>
-          </div>
-          <div className="stat-card stat-approved">
-            <div className="stat-number">{stats.approved}</div>
-            <div className="stat-label">Approuvées</div>
-          </div>
-          <div className="stat-card stat-rejected">
-            <div className="stat-number">{stats.rejected}</div>
-            <div className="stat-label">Rejetées</div>
+    <RouteGuard allowedRoles={['ADMIN', 'INSURER']}>
+      <div className="change-requests-container">
+        <div className="change-requests-header">
+          <h1 className="change-requests-title">Demandes de modification</h1>
+          <div className="requests-stats">
+            <div className="stat-card stat-pending">
+              <div className="stat-number">{stats.pending}</div>
+              <div className="stat-label">En attente</div>
+            </div>
+            <div className="stat-card stat-approved">
+              <div className="stat-number">{stats.approved}</div>
+              <div className="stat-label">Approuvées</div>
+            </div>
+            <div className="stat-card stat-rejected">
+              <div className="stat-number">{stats.rejected}</div>
+              <div className="stat-label">Rejetées</div>
+            </div>
           </div>
         </div>
-      </div>
 
       {requests.length === 0 ? (
         <div className="empty-state">
@@ -246,7 +267,8 @@ export default function ContractChangeRequestsPage() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </RouteGuard>
   )
 }
 

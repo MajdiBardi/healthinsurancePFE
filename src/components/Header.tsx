@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, useRef } from "react"
 import axios from "axios"
 import { useAuth } from "../contexts/AuthProvider"
+import { notificationManager } from "../utils/notificationManager"
 import "./header.css"
 
 export default function Header() {
@@ -11,17 +12,41 @@ export default function Header() {
   const { keycloak } = useAuth()
   const [contracts, setContracts] = useState<any[]>([])
   const [notifOpen, setNotifOpen] = useState(false)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
   const notifRef = useRef<HTMLButtonElement>(null)
 
-  // Charger les contrats du client
+  // Charger les contrats du client et les notifications
   useEffect(() => {
     const roles = keycloak?.tokenParsed?.realm_access?.roles || []
+    const userId = keycloak?.tokenParsed?.sub
+    
     if (roles.includes("CLIENT")) {
       axios
         .get("http://localhost:8222/api/contracts/my-contracts", {
           headers: { Authorization: `Bearer ${keycloak.token}` },
         })
         .then((res) => setContracts(res.data))
+      
+      // Charger les notifications non lues pour cet utilisateur
+      if (userId) {
+        const unreadCount = notificationManager.getUnreadCount(userId)
+        setUnreadNotifications(unreadCount)
+      }
+    }
+  }, [keycloak?.token])
+
+  // Rafraîchir le compteur de notifications toutes les 2 secondes
+  useEffect(() => {
+    const roles = keycloak?.tokenParsed?.realm_access?.roles || []
+    const userId = keycloak?.tokenParsed?.sub
+    
+    if (roles.includes("CLIENT") && userId) {
+      const interval = setInterval(() => {
+        const unreadCount = notificationManager.getUnreadCount(userId)
+        setUnreadNotifications(unreadCount)
+      }, 2000)
+
+      return () => clearInterval(interval)
     }
   }, [keycloak?.token])
 
@@ -61,7 +86,7 @@ export default function Header() {
             <svg className="notification-icon" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" />
             </svg>
-            {contracts.length > 0 && <span className="notification-badge" />}
+            {unreadNotifications > 0 && <span className="notification-badge">{unreadNotifications}</span>}
           </button>
 
           {notifOpen && (

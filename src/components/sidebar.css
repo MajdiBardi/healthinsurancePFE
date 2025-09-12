@@ -163,6 +163,20 @@
   overflow: hidden;
 }
 
+.nav-link[href="/"] {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #0ea5e9;
+  color: #0369a1;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.nav-link[href="/"]:hover {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: white;
+  transform: translateX(4px);
+}
+
 .nav-link:hover {
   background: rgba(25, 118, 210, 0.04);
   color: #1976d2;

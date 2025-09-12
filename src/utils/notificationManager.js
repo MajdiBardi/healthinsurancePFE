@@ -4,20 +4,26 @@ class NotificationManager {
     this.storageKey = 'clientNotifications';
   }
 
-  // Ajouter une notification
-  addNotification(notification) {
+  // Ajouter une notification pour un utilisateur spécifique
+  addNotification(notification, userId) {
+    if (!userId) {
+      console.error('User ID is required to add notification');
+      return null;
+    }
+
     const notifications = this.getAllNotifications();
     const newNotification = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
       read: false,
+      userId: userId, // Ajouter l'ID utilisateur
       ...notification
     };
     
     notifications.unshift(newNotification);
     this.saveNotifications(notifications);
     
-    console.log('Notification added:', newNotification);
+    console.log('Notification added for user:', userId, newNotification);
     return newNotification;
   }
 
@@ -32,26 +38,38 @@ class NotificationManager {
     }
   }
 
+  // Récupérer les notifications d'un utilisateur spécifique
+  getUserNotifications(userId) {
+    if (!userId) {
+      console.error('User ID is required to get notifications');
+      return [];
+    }
+
+    const allNotifications = this.getAllNotifications();
+    return allNotifications.filter(notification => notification.userId === userId);
+  }
+
   // Marquer une notification comme lue
-  markAsRead(notificationId) {
+  markAsRead(notificationId, userId) {
     const notifications = this.getAllNotifications();
     const updated = notifications.map(n => 
-      n.id === notificationId ? { ...n, read: true } : n
+      n.id === notificationId && n.userId === userId ? { ...n, read: true } : n
     );
     this.saveNotifications(updated);
   }
 
   // Supprimer une notification
-  deleteNotification(notificationId) {
+  deleteNotification(notificationId, userId) {
     const notifications = this.getAllNotifications();
-    const updated = notifications.filter(n => n.id !== notificationId);
+    const updated = notifications.filter(n => !(n.id === notificationId && n.userId === userId));
     this.saveNotifications(updated);
   }
 
-  // Compter les notifications non lues
-  getUnreadCount() {
-    const notifications = this.getAllNotifications();
-    return notifications.filter(n => !n.read).length;
+  // Compter les notifications non lues pour un utilisateur
+  getUnreadCount(userId) {
+    if (!userId) return 0;
+    const userNotifications = this.getUserNotifications(userId);
+    return userNotifications.filter(n => !n.read).length;
   }
 
   // Sauvegarder les notifications

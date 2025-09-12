@@ -6,11 +6,23 @@
 
 /* Added search section styles */
 .search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
+  gap: 1rem;
 }
 
 .search-container {
   max-width: 500px;
+  flex: 1;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 .search-input-wrapper {
@@ -76,10 +88,7 @@
 }
 
 .users-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .users-title {
@@ -87,11 +96,34 @@
   font-weight: bold;
   color: #2563eb;
   letter-spacing: 0.025em;
+  margin: 0;
 }
 
 .users-count {
   font-size: 14px;
   color: #6b7280;
+  white-space: nowrap;
+}
+
+/* Responsive design for search section */
+@media (max-width: 768px) {
+  .search-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .search-container {
+    max-width: none;
+  }
+  
+  .search-actions {
+    justify-content: center;
+  }
+  
+  .users-count {
+    font-size: 13px;
+  }
 }
 
 .loading-container {

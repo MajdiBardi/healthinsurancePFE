@@ -39,18 +39,18 @@ export default function NotificationsPage() {
         .then((res: any) => setMyChangeRequests(res.data))
         .catch((err: any) => console.error("Error loading change requests:", err))
       
-      // Utiliser le gestionnaire de notifications offline
-      const storedNotifications = notificationManager.getAllNotifications()
-      console.log('Loaded local notifications:', storedNotifications)
-      setClientNotifications(storedNotifications)
+      // Utiliser le gestionnaire de notifications offline avec filtrage par utilisateur
+      const userNotifications = notificationManager.getUserNotifications(userId)
+      console.log('Loaded local notifications for user:', userId, userNotifications)
+      setClientNotifications(userNotifications)
       
       // Essayer le backend en arrière-plan (sans bloquer)
       if (userId) {
         getUserNotifications(userId)
           .then((res: any) => {
             console.log('Backend notifications loaded successfully:', res.data)
-            // Fusionner avec les notifications locales
-            const allNotifications = [...res.data, ...storedNotifications]
+            // Fusionner avec les notifications locales filtrées
+            const allNotifications = [...res.data, ...userNotifications]
             setClientNotifications(allNotifications)
           })
           .catch((err: any) => {
@@ -67,9 +67,12 @@ export default function NotificationsPage() {
       const roles = keycloak?.tokenParsed?.realm_access?.roles || []
       
       if (roles.includes("CLIENT")) {
-        // Utiliser le gestionnaire de notifications offline
-        const storedNotifications = notificationManager.getAllNotifications()
-        setClientNotifications(storedNotifications)
+        // Utiliser le gestionnaire de notifications offline avec filtrage par utilisateur
+        const userId = keycloak?.tokenParsed?.sub
+        if (userId) {
+          const userNotifications = notificationManager.getUserNotifications(userId)
+          setClientNotifications(userNotifications)
+        }
       }
     }, 2000)
 

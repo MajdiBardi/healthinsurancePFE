@@ -11,25 +11,32 @@ type RoleType = "ADMIN" | "CLIENT" | "INSURER" | "BENEFICIARY"
 
 const roleLinks: Record<RoleType, { href: string; label: string; icon: string }[]> = {
   ADMIN: [
+    { href: "/", label: "Accueil", icon: "🏠" },
     { href: "/dashboard", label: "Dashboard", icon: "📊" },
+    { href: "/ml-analytics", label: "Analytics ML", icon: "🤖" },
     { href: "/users", label: "Utilisateurs", icon: "👥" },
     { href: "/contracts", label: "Contrats", icon: "📋" },
     { href: "/contracts/change-requests", label: "Demandes de modification", icon: "🔁" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ],
   CLIENT: [
+    { href: "/", label: "Accueil", icon: "🏠" },
     //{ href: "/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/contracts", label: "Mes Contrats", icon: "📋" },
     { href: "/payments", label: "Mon Portfolio", icon: "💼" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
   ],
   INSURER: [
-    //{ href: "/dashboard", label: "Dashboard", icon: "📊" },
+    { href: "/", label: "Accueil", icon: "🏠" },
+    { href: "/ml-analytics", label: "Analytics ML", icon: "🤖" },
     { href: "/users", label: "Utilisateurs", icon: "👥" },
     { href: "/contracts", label: "Contrats", icon: "📋" },
+    { href: "/contracts/change-requests", label: "Demandes de modification", icon: "🔁" },
     { href: "/notifications", label: "Notifications", icon: "🔔" },
+    
   ],
   BENEFICIARY: [
+    { href: "/", label: "Accueil", icon: "🏠" },
     //{ href: "/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/contracts", label: "Contrats", icon: "📋" },
   ],

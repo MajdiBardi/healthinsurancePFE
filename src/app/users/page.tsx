@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthProvider';
 import axios from 'axios';
+import RouteGuard from '../../components/RouteGuard';
 import './users.css';
 
 export default function UsersPage() {
@@ -74,48 +75,52 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="users-container">
-      <div className="users-header">
-        <h2 className="users-title">Liste des utilisateurs</h2>
-        <div className="users-count">
-          {searchTerm ? `${filteredUsers.length} sur ${users.length}` : users.length} utilisateur
-          {(searchTerm ? filteredUsers.length : users.length) > 1 ? "s" : ""} trouvé
-          {(searchTerm ? filteredUsers.length : users.length) > 1 ? "s" : ""}
+    <RouteGuard allowedRoles={['ADMIN', 'INSURER']}>
+      <div className="users-container">
+        <div className="users-header">
+          <h2 className="users-title">Liste des utilisateurs</h2>
         </div>
-      </div>
 
-      <div className="search-section">
-        <div className="search-container">
-          <div className="search-input-wrapper">
-            <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="search-section">
+          <div className="search-container">
+            <div className="search-input-wrapper">
+              <svg className="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Rechercher par nom, email, rôle ou ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Rechercher par nom, email, rôle ou ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="clear-search-button"
-                aria-label="Effacer la recherche"
-              >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="clear-search-button"
+                  aria-label="Effacer la recherche"
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="search-actions">
+            <div className="users-count">
+              {searchTerm ? `${filteredUsers.length} sur ${users.length}` : users.length} utilisateur
+              {(searchTerm ? filteredUsers.length : users.length) > 1 ? "s" : ""} trouvé
+              {(searchTerm ? filteredUsers.length : users.length) > 1 ? "s" : ""}
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="table-container">
         <div className="table-wrapper">
@@ -213,6 +218,7 @@ export default function UsersPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </RouteGuard>
   )
 }
